@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# Deploy blue version
+kubectl apply -f blue_deployment.yaml
+
+# Deploy green version
+kubectl apply -f green_deployment.yaml
+
+# Apply service (initially to blue)
+kubectl apply -f kubeservice.yaml
+
+# Check for errors in green pods
+green_pods=$(kubectl get pods -l version=green -o jsonpath="{.items[*].metadata.name}")
+for pod in $green_pods; do
+    kubectl logs $pod
+done
