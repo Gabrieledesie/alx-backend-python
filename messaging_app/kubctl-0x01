@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Exit on error
+set -e
+
+echo "Scaling messaging-app-deployment to 3 replicas..."
+kubectl scale deployment messaging-app-deployment --replicas=3
+
+echo "Waiting for pods to be Ready..."
+kubectl rollout status deployment messaging-app-deployment
+
+echo
+echo "Current pods:"
+kubectl get pods -l app=messaging-app -o wide
+
+echo
+echo "Current services:"
+kubectl get svc messaging-app-service
+
+# Simple load test using wrk, if available
+if command -v wrk >/dev/null 2>&1; then
+  echo
+  echo "Running wrk load test against the messaging app service (through NodePort or port-forward)..."
+  echo "NOTE: Ensure you have port-forward or NodePort access configured before running wrk."
+  # Example target; adjust as needed:
+  # kubectl port-forward svc/messaging-app-service 8080:80 &
+  # PF_PID=$!
+  # sleep 3
+  # wrk -t2 -c20 -d30s http://127.0.0.1:8080/
+  # kill $PF_PID
+else
+  echo
+  echo "wrk is not installed; skipping load test step."
+fi
+
+# Show resource usage if metrics-server is installed
+if kubectl api-resources | grep -q "^nodes.*metrics"; then
+  echo
+  echo "Resource usage for pods:"
+  kubectl top pods -l app=messaging-app || echo "kubectl top pods failed (metrics-server may not be installed)."
+else
+  echo
+  echo "metrics-server not detected; skipping 'kubectl top' metrics."
+fi
