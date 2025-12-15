@@ -1,24 +1,14 @@
 #!/bin/bash
+set -e
 
-# Check if minikube is available in PATH
-if command -v minikube &> /dev/null; then
-    echo "Minikube is already installed."
-else
-    echo "Minikube not found. Please install it manually on Windows using PowerShell instructions (see guide)."
-    exit 1  # Stop the script if not installed
-fi
+echo "Starting Kubernetes cluster..."
+minikube start
 
-# Check if kubectl is available (required for verification)
-if ! command -v kubectl &> /dev/null; then
-    echo "kubectl not found. Please install it manually."
-    exit 1
-fi
+echo "Verifying cluster is running:"
+kubectl cluster-info
 
-# Start the Kubernetes cluster (use --driver=docker if needed; no-op if already running)
-minikube start --driver=docker || exit 1
+echo "Retrieving available pods:"
+kubectl get pods
 
-# Verify the cluster is running
-kubectl cluster-info || exit 1
-
-# Retrieve available pods
-kubectl get pods --all-namespaces || exit 1
+echo "Minikube is installed and working"
+minikube version
