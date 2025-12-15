@@ -19,7 +19,8 @@ spec:
     spec:
       containers:
         - name: messaging-app
-          image: nginx:latest
+          image: nginx:1.25.0   # treat this tag as "2.0"
           ports:
             - containerPort: 80
+
 

@@ -1,0 +1,40 @@
+#!/bin/bash
+set -e
+
+echo "Applying updated blue_deployment.yaml (version 2.0 image)..."
+kubectl apply -f blue_deployment.yaml
+
+echo
+echo "Waiting for rolling update of blue-deployment to complete..."
+kubectl rollout status deployment/blue-deployment
+
+echo
+echo "Current blue pods after rollout:"
+kubectl get pods -l app=messaging-app,version=blue -o wide
+
+echo
+echo "Starting temporary port-forward to test availability..."
+# Forward local port 8080 to the ClusterIP service port 80
+kubectl port-forward svc/messaging-app-service 8080:80 >/dev/null 2>&1 &
+PF_PID=$!
+
+# Give port-forward time to start
+sleep 3
+
+echo "Sending test requests with curl (press Ctrl+C to stop if it hangs)..."
+for i in $(seq 1 10); do
+  echo "Request $i:"
+  if curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:8080/; then
+    echo "Request $i succeeded"
+  else
+    echo "Request $i failed"
+  fi
+  sleep 1
+done
+
+echo "Stopping port-forward..."
+kill $PF_PID || true
+
+echo
+echo "Final blue pods state:"
+kubectl get pods -l app=messaging-app,version=blue -o wide
