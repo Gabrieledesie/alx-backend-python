@@ -37,7 +37,13 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r messaging_app/requirements.txt || echo "No requirements.txt"
-        pip install pytest pytest-django pytest-cov mysqlclient
+        pip install pytest pytest-django pytest-cov mysqlclient flake8
+    
+    - name: Run flake8 linting
+      run: |
+        cd messaging_app
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     
     - name: Wait for MySQL
       run: |
@@ -47,12 +53,12 @@ jobs:
           sleep 2
         done
     
-    - name: Run tests
+    - name: Run tests with coverage
       env:
         DATABASE_URL: mysql://root:root@127.0.0.1:3306/test_db
       run: |
         cd messaging_app
-        pytest --junitxml=test-results.xml --cov=. --cov-report=xml
+        pytest --junitxml=test-results.xml --cov=. --cov-report=xml --cov-report=html
     
     - name: Upload test results
       uses: actions/upload-artifact@v3
@@ -60,3 +66,9 @@ jobs:
       with:
         name: test-results
         path: messaging_app/test-results.xml
+    
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v3
+      with:
+        name: coverage-report
+        path: messaging_app/htmlcov
