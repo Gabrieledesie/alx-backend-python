@@ -8,7 +8,7 @@ echo "Verifying cluster is running:"
 kubectl cluster-info
 
 echo "Retrieving available pods:"
-kubectl get pods
+kubectl get pods --all-namespaces
 
 echo "Minikube is installed and working"
 minikube version
