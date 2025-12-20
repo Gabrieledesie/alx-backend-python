@@ -1,0 +1,61 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Pulling code from GitHub...'
+                git branch: 'main',
+                    url: 'https://github.com/Gabrieledesie/alx-backend-python.git'
+            }
+        }
+        
+        stage('Install Dependencies') {
+            steps {
+                echo 'Installing dependencies...'
+                sh '''
+                    cd messaging_app
+                    pip3 install -r requirements.txt || echo "No requirements.txt found"
+                    pip3 install pytest pytest-django pytest-cov
+                '''
+            }
+        }
+        
+        stage('Run Tests') {
+            steps {
+                echo 'Running tests with pytest...'
+                sh '''
+                    cd messaging_app
+                    pytest --junitxml=test-results.xml --cov=. --cov-report=html || true
+                '''
+            }
+        }
+        
+        stage('Generate Report') {
+            steps {
+                echo 'Generating test report...'
+                junit 'messaging_app/test-results.xml'
+                publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'messaging_app/htmlcov',
+                    reportFiles: 'index.html',
+                    reportName: 'Coverage Report'
+                ])
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo 'Pipeline completed!'
+        }
+        success {
+            echo 'Tests passed successfully!'
+        }
+        failure {
+            echo 'Tests failed!'
+        }
+    }
+}
