@@ -1,0 +1,62 @@
+name: CI - Test Django App
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r messaging_app/requirements.txt || echo "No requirements.txt"
+        pip install pytest pytest-django pytest-cov mysqlclient
+    
+    - name: Wait for MySQL
+      run: |
+        sudo apt-get install -y mysql-client
+        until mysqladmin ping -h"127.0.0.1" -P3306 --silent; do
+          echo 'waiting for mysql...'
+          sleep 2
+        done
+    
+    - name: Run tests
+      env:
+        DATABASE_URL: mysql://root:root@127.0.0.1:3306/test_db
+      run: |
+        cd messaging_app
+        pytest --junitxml=test-results.xml --cov=. --cov-report=xml
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: messaging_app/test-results.xml
