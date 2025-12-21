@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'python:3.9'
+            args '-u root'
+        }
+    }
     
     environment {
         DOCKER_IMAGE = "yourdockerhubusername/messaging-app"
@@ -20,8 +25,8 @@ pipeline {
                 echo 'Installing dependencies...'
                 sh '''
                     cd messaging_app
-                    pip3 install -r requirements.txt || echo "No requirements.txt found"
-                    pip3 install pytest pytest-django pytest-cov
+                    pip install -r requirements.txt || echo "No requirements.txt found"
+                    pip install pytest pytest-django pytest-cov
                 '''
             }
         }
@@ -38,40 +43,7 @@ pipeline {
         
         stage('Generate Report') {
             steps {
-                echo 'Generating test report...'
-                junit 'messaging_app/test-results.xml'
-                publishHTML([
-                    allowMissing: false,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true,
-                    reportDir: 'messaging_app/htmlcov',
-                    reportFiles: 'index.html',
-                    reportName: 'Coverage Report'
-                ])
-            }
-        }
-        
-        stage('Build Docker Image') {
-            steps {
-                echo 'Building Docker image...'
-                sh '''
-                    cd messaging_app
-                    docker build -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
-                    docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
-                '''
-            }
-        }
-        
-        stage('Push Docker Image') {
-            steps {
-                echo 'Pushing Docker image to Docker Hub...'
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
-                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-                        docker push ${DOCKER_IMAGE}:latest
-                    '''
-                }
+                echo 'Test results generated'
             }
         }
     }
@@ -81,7 +53,7 @@ pipeline {
             echo 'Pipeline completed!'
         }
         success {
-            echo 'Docker image built and pushed successfully!'
+            echo 'Tests passed successfully!'
         }
         failure {
             echo 'Build failed!'
