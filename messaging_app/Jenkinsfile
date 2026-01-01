@@ -9,9 +9,10 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo 'Pulling code from GitHub...'
+                echo 'Pulling code from GitHub with credentials...'
                 git branch: 'main',
-                    url: 'https://github.com/Gabrieledesie/alx-backend-python.git'
+                    url: 'https://github.com/Gabrieledesie/alx-backend-python.git',
+                    credentialsId: 'githubcredentials'
             }
         }
         
@@ -38,7 +39,8 @@ pipeline {
         
         stage('Generate Report') {
             steps {
-                echo 'Test report generated'
+                echo 'Generating test report...'
+                junit 'messaging_app/test-results.xml'
             }
         }
         
