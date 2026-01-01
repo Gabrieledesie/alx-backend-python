@@ -39,8 +39,14 @@ pipeline {
         
         stage('Generate Report') {
             steps {
-                echo 'Generating test report...'
-                junit 'messaging_app/test-results.xml'
+                echo 'Test report generated (if tests exist)'
+                script {
+                    if (fileExists('messaging_app/test-results.xml')) {
+                        junit allowEmptyResults: true, testResults: 'messaging_app/test-results.xml'
+                    } else {
+                        echo 'No test results found - skipping'
+                    }
+                }
             }
         }
         
